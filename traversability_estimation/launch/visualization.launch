@@ -1,5 +1,7 @@
 <launch>
-  <node pkg="grid_map_visualization" type="grid_map_visualization" name="traversability_map_visualization" output="screen">
+  <node pkg="grid_map_visualization" type="grid_map_visualization" name="grid_map_visualization" output="screen">
 	<rosparam command="load" file="$(find traversability_estimation)/config/visualization/traversability.yaml"/>
   </node>
+<!-- Launch RViz with the demo configuration -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find traversability_estimation)/rviz/grid_map_demo.rviz" />
 </launch>
