@@ -29,6 +29,7 @@
 // STD
 #include <string>
 #include <vector>
+#include <boost/filesystem.hpp>
 
 namespace traversability_estimation {
 
@@ -57,6 +58,8 @@ class TraversabilityEstimation {
    * @return true if successful.
    */
   bool loadElevationMap(grid_map_msgs::ProcessFile::Request& request, grid_map_msgs::ProcessFile::Response& response);
+
+  bool loadAndSaveMap(grid_map_msgs::ProcessFile::Request& request, grid_map_msgs::ProcessFile::Response& response);//YJ
 
   /*!
    * ROS service callback function that forces an update of the traversability map,
@@ -172,6 +175,7 @@ class TraversabilityEstimation {
   ros::ServiceServer traversabilityFootprint_;
   ros::ServiceServer saveToBagService_;
   ros::ServiceServer loadElevationMapService_;
+  ros::ServiceServer loadAndSaveMapService_;
 
   //! Image subscriber.
   ros::Subscriber imageSubscriber_;

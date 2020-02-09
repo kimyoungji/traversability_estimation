@@ -50,6 +50,7 @@ TraversabilityEstimation::TraversabilityEstimation(ros::NodeHandle& nodeHandle)
   traversabilityFootprint_ =
       nodeHandle_.advertiseService("traversability_footprint", &TraversabilityEstimation::traversabilityFootprint, this);
   saveToBagService_ = nodeHandle_.advertiseService("save_traversability_map_to_bag", &TraversabilityEstimation::saveToBag, this);
+  loadAndSaveMapService_ = nodeHandle_.advertiseService("load_and_save_traversability_map", &TraversabilityEstimation::loadAndSaveMap, this);
   imageSubscriber_ = nodeHandle_.subscribe(imageTopic_, 1, &TraversabilityEstimation::imageCallback, this);
 
   if (acceptGridMapToInitTraversabilityMap_) {
@@ -137,7 +138,8 @@ bool TraversabilityEstimation::loadElevationMap(grid_map_msgs::ProcessFile::Requ
               request.topic_name.c_str());
     response.success = static_cast<unsigned char>(false);
   } else {
-    map.setTimestamp(ros::Time::now().toNSec());
+//    map.setTimestamp(ros::Time::now().toNSec());
+//    cout<<map.getTimestamp()<<endl;//YJ
     if (!initializeTraversabilityMapFromGridMap(map)) {
       ROS_ERROR(
           "TraversabilityEstimation: loadElevationMap: it was not possible to load elevation map from bag with path '%s' and topic '%s'.",
@@ -149,6 +151,51 @@ bool TraversabilityEstimation::loadElevationMap(grid_map_msgs::ProcessFile::Requ
   }
 
   return true;
+}
+
+bool TraversabilityEstimation::loadAndSaveMap(grid_map_msgs::ProcessFile::Request& request, grid_map_msgs::ProcessFile::Response& response) {
+
+  ROS_INFO("TraversabilityEstimation: loadElevationMap");
+  if (request.file_path.empty()) {
+    ROS_WARN("Fields 'file_path' and 'topic_name' in service request must be filled in.");
+    response.success = static_cast<unsigned char>(false);
+    return true;
+  }
+
+  grid_map::GridMap map;
+  std::string file_path = request.file_path + "elevation/";
+
+  for ( boost::filesystem::directory_iterator it(file_path); it!= boost::filesystem::directory_iterator(); ++it){
+    std::string load_file = file_path + it->path().filename().string();
+    std::string save_file = request.file_path + "traversability/" + it->path().filename().string();
+
+    if (!grid_map::GridMapRosConverter::loadFromBag(load_file, "/elevation_mapping/elevation_map", map)) {
+    ROS_ERROR("TraversabilityEstimation: Cannot find bag '%s' or topic '%s' of the elevation map!", request.file_path.c_str(),
+              request.topic_name.c_str());
+    response.success = static_cast<unsigned char>(false);
+    } else {
+        if (!initializeTraversabilityMapFromGridMap(map)) {
+          ROS_ERROR(
+              "TraversabilityEstimation: loadElevationMap: it was not possible to load elevation map from bag with path '%s' and topic '%s'.",
+              request.file_path.c_str(), request.topic_name.c_str());
+          response.success = static_cast<unsigned char>(false);
+        } else {
+
+        ROS_INFO("Save to bag.");
+        if (request.file_path.empty()) {
+            ROS_WARN("Fields 'file_path' and 'topic_name' in service request must be filled in.");
+            response.success = static_cast<unsigned char>(false);
+            return true;
+        }
+    
+        response.success = static_cast<unsigned char>(grid_map::GridMapRosConverter::saveToBag(traversabilityMap_.getTraversabilityMap(), save_file, "traversability_estimation/traversability_map"));
+        response.success = static_cast<unsigned char>(true);
+        }
+    } 
+  }
+
+  return true;    
+
 }
 
 void TraversabilityEstimation::imageCallback(const sensor_msgs::Image& image) {
@@ -329,12 +376,12 @@ bool TraversabilityEstimation::saveToBag(grid_map_msgs::ProcessFile::Request& re
 }
 
 bool TraversabilityEstimation::initializeTraversabilityMapFromGridMap(const grid_map::GridMap& gridMap) {
-  if (traversabilityMap_.traversabilityMapInitialized()) {
-    ROS_WARN(
-        "[TraversabilityEstimation::gridMapToInitTraversabilityMapCallback]: received grid map message cannot be used to initialize"
-        " the traversability map, because current traversability map has been already initialized.");
-    return false;
-  }
+//  if (traversabilityMap_.traversabilityMapInitialized()) {
+//    ROS_WARN(
+//        "[TraversabilityEstimation::gridMapToInitTraversabilityMapCallback]: received grid map message cannot be used to initialize"
+//        " the traversability map, because current traversability map has been already initialized.");
+//    return false;
+//  }
 
   grid_map::GridMap mapWithCheckedLayers = gridMap;
   for (const auto& layer : elevationMapLayers_) {
